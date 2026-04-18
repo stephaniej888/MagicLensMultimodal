@@ -3805,9 +3805,9 @@ window.addEventListener('load', function() {
 (function() {
   'use strict';
 
-  const SEEDANCE_ENDPOINT = 'https://api.seedance.ai/v1';
-  // CORS proxy — routes browser requests through corsproxy.io to bypass CORS restrictions
-  const CORS_PROXY = 'https://corsproxy.io/?url=';
+  // Local CORS proxy — node seedance-proxy.js must be running on port 3001
+  // Routes /seedance/* → https://ark.ap-southeast.bytepluses.com/api/v3/*
+  const SEEDANCE_PROXY_BASE = 'http://localhost:3001/seedance';
   const POLL_INTERVAL_MS = 4000;
   const POLL_TIMEOUT_MS = 240000;
   const URL_GRACE_MS = 30000;
@@ -3856,20 +3856,26 @@ window.addEventListener('load', function() {
   }
 
   async function seedanceCreateTask(prompt, apiKey) {
-    const resp = await fetch(`${CORS_PROXY}${encodeURIComponent(SEEDANCE_ENDPOINT + '/video/generate')}`, {
+    // BytePlus ModelArk API format: content array with type/text objects
+    const body = {
+      model: 'seedance-1-0-lite-i2v-250428',
+      content: [{ type: 'text', text: prompt }]
+    };
+    const resp = await fetch(`${SEEDANCE_PROXY_BASE}/video/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'seedance-1-0-lite-i2v-250428', prompt, duration: 5, resolution: '720p', fps: 24 })
+      body: JSON.stringify(body)
     });
     if (!resp.ok) throw new Error(`Seedance create failed: ${resp.status} ${await resp.text()}`);
     const data = await resp.json();
-    const taskId = data.task_id || data.id || data.job_id;
-    if (!taskId) throw new Error('Seedance returned no task_id');
+    // BytePlus returns { id: 'cgt-...' }, legacy APIs use task_id or job_id
+    const taskId = data.id || data.task_id || data.job_id;
+    if (!taskId) throw new Error('Seedance returned no task id: ' + JSON.stringify(data));
     return { taskId, raw: data };
   }
 
   async function seedancePollTask(taskId, apiKey) {
-    const resp = await fetch(`${CORS_PROXY}${encodeURIComponent(SEEDANCE_ENDPOINT + '/video/task/' + taskId)}`, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+    const resp = await fetch(`${SEEDANCE_PROXY_BASE}/video/task/${taskId}`, { headers: { 'Authorization': `Bearer ${apiKey}` } });
     if (!resp.ok) throw new Error(`Seedance poll failed: ${resp.status}`);
     return await resp.json();
   }
