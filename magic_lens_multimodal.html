@@ -3856,9 +3856,9 @@ window.addEventListener('load', function() {
   }
 
   async function seedanceCreateTask(prompt, apiKey) {
-    // BytePlus ModelArk API format: content array with type/text objects
+    // BytePlus ModelArk API — text-to-video (t2v) model, no image required
     const body = {
-      model: 'seedance-1-0-lite-i2v-250428',
+      model: 'seedance-1-0-lite-t2v-250428',
       content: [{ type: 'text', text: prompt }]
     };
     const resp = await fetch(`${SEEDANCE_PROXY_BASE}/video/generate`, {
@@ -4057,7 +4057,7 @@ window.addEventListener('load', function() {
             </div>
             <div class="vgm-provider-row">
               <span class="vgm-provider-badge">Seedance 2.0</span>
-              <span class="vgm-provider-note">seedance-1-0-lite-i2v · async job · polls until complete</span>
+              <span class="vgm-provider-note">seedance-1-0-lite-t2v · text-to-video · async job · polls until complete</span>
             </div>
             <div class="vgm-actions">
               <button class="vgm-btn-cancel" id="vgm-cancel-btn">Cancel</button>
